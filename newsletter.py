@@ -186,13 +186,18 @@ def build_html(market_data, news, macro_data, date_str):
 def send_via_buttondown(subject, html_body):
     resp = requests.post(
         "https://api.buttondown.com/v1/emails",
-        headers={"Authorization": f"Token {BUTTONDOWN_API_KEY}"},
+        headers={
+            "Authorization": f"Token {BUTTONDOWN_API_KEY}",
+            "X-Buttondown-Live-Dangerously": "true",
+        },
         json={
             "subject": subject,
             "body": html_body,
-            "status": "published",
+            "status": "about_to_send",
         },
     )
+    if not resp.ok:
+        print(f"Buttondown error {resp.status_code}: {resp.text}")
     resp.raise_for_status()
     return resp.json()
 

@@ -157,6 +157,7 @@ def build_html(market_data, news, macro_data, date_str):
     <th>Change</th>
     <th>P/E</th>
     <th>Fwd P/E</th>
+    <th>Sector</th>
   </tr>
   {% for stock in market_data %}
   <tr>
@@ -165,6 +166,7 @@ def build_html(market_data, news, macro_data, date_str):
     <td class="{{ 'up' if stock.change_pct >= 0 else 'down' }}">{{ "%+.2f"|format(stock.change_pct) }}%</td>
     <td>{{ "%.1f"|format(stock.pe_ratio) if stock.pe_ratio else "—" }}</td>
     <td>{{ "%.1f"|format(stock.forward_pe) if stock.forward_pe else "—" }}</td>
+    <td>{{ stock.sector }}</td>
   </tr>
   {% endfor %}
   </table>

@@ -264,6 +264,8 @@ def main():
 
     print(f"[{datetime.datetime.now()}] Fetching subscriber list from Buttondown...")
     subscribers = get_subscribers()
+    extra = config.get("extra_subscribers", [])
+    subscribers = list(set(subscribers + extra))
     print(f"  Found {len(subscribers)} subscriber(s)")
 
     subject = f"Daily Fundamentals Report — {date_str}"

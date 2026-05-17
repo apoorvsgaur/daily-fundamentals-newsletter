@@ -110,95 +110,100 @@ def fetch_fred_data(series_ids):
 def build_html(market_data, news, macro_data, date_str):
     template = Template("""
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  body { margin: 0; padding: 0; background-color: #f4f4f7; }
+  .wrapper { width: 100%; background-color: #f4f4f7; padding: 30px 0; }
+  .container { max-width: 620px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .header { background: #1a1a2e; padding: 24px 30px; }
+  .header h1 { color: #ffffff; margin: 0; font-size: 22px; font-family: Georgia, serif; }
+  .header p { color: #a0a0b0; margin: 6px 0 0 0; font-size: 13px; font-family: Arial, sans-serif; }
+  .section { padding: 24px 30px; border-bottom: 1px solid #eee; }
+  .section:last-child { border-bottom: none; }
+  .section h2 { color: #1a1a2e; font-size: 16px; margin: 0 0 14px 0; font-family: Arial, sans-serif; text-transform: uppercase; letter-spacing: 0.5px; }
+  table.data { width: 100%; border-collapse: collapse; font-family: Arial, sans-serif; font-size: 13px; }
+  table.data th { text-align: left; padding: 8px 10px; background: #f8f9fa; color: #555; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; border-bottom: 2px solid #e0e0e0; }
+  table.data td { padding: 7px 10px; border-bottom: 1px solid #f0f0f0; }
+  table.data tr:last-child td { border-bottom: none; }
+  .ticker { font-weight: 700; color: #1a1a2e; }
+  .up { color: #16a34a; font-weight: 600; }
+  .down { color: #dc2626; font-weight: 600; }
+  .news-item { padding: 10px 0; border-bottom: 1px solid #f0f0f0; }
+  .news-item:last-child { border-bottom: none; }
+  .news-item a { color: #1a1a2e; text-decoration: none; font-size: 14px; font-family: Arial, sans-serif; line-height: 1.4; }
+  .news-item a:hover { text-decoration: underline; }
+  .news-meta { color: #999; font-size: 11px; margin-top: 3px; font-family: Arial, sans-serif; }
+  .footer { padding: 20px 30px; text-align: center; color: #999; font-size: 11px; font-family: Arial, sans-serif; }
+</style>
 </head>
-<body style="margin: 0; padding: 0; background-color: #f8f9fa;">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-<tr><td align="center" style="padding: 20px 10px;">
-<table role="presentation" width="700" cellpadding="0" cellspacing="0" border="0" style="max-width: 700px; width: 100%;">
+<body>
+<div class="wrapper">
+<div class="container">
 
-<tr><td style="font-family: Segoe UI, Arial, sans-serif; padding: 0 0 20px 0;">
-  <h1 style="color: #1a1a2e; border-bottom: 3px solid #16213e; padding-bottom: 10px; margin: 0 0 5px 0; font-size: 24px;">Daily Fundamentals Report</h1>
-  <p style="color: #666; font-size: 14px; margin: 0;">{{ date_str }} | After Market Close</p>
-</td></tr>
+<div class="header">
+  <h1>Daily Fundamentals Report</h1>
+  <p>{{ date_str }}</p>
+</div>
 
-<tr><td style="background: #ffffff; padding: 20px; font-family: Segoe UI, Arial, sans-serif;">
-  <h2 style="color: #16213e; margin: 0 0 15px 0; font-size: 18px;">Market Overview</h2>
-  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="table-layout: fixed; border-collapse: collapse;">
-  <colgroup>
-    <col width="60">
-    <col width="80">
-    <col width="70">
-    <col width="50">
-    <col width="55">
-    <col width="*">
-  </colgroup>
+<div class="section">
+  <h2>Market Overview</h2>
+  <table class="data">
   <tr>
-    <td style="padding: 6px 4px; font-size: 12px; font-weight: bold; color: #ffffff; background-color: #16213e; border: 1px solid #16213e;">Ticker</td>
-    <td style="padding: 6px 4px; font-size: 12px; font-weight: bold; color: #ffffff; background-color: #16213e; border: 1px solid #16213e;">Price</td>
-    <td style="padding: 6px 4px; font-size: 12px; font-weight: bold; color: #ffffff; background-color: #16213e; border: 1px solid #16213e;">Chg %</td>
-    <td style="padding: 6px 4px; font-size: 12px; font-weight: bold; color: #ffffff; background-color: #16213e; border: 1px solid #16213e;">P/E</td>
-    <td style="padding: 6px 4px; font-size: 12px; font-weight: bold; color: #ffffff; background-color: #16213e; border: 1px solid #16213e;">Fwd</td>
-    <td style="padding: 6px 4px; font-size: 12px; font-weight: bold; color: #ffffff; background-color: #16213e; border: 1px solid #16213e;">Sector</td>
+    <th>Ticker</th>
+    <th>Price</th>
+    <th>Change</th>
+    <th>P/E</th>
+    <th>Fwd P/E</th>
   </tr>
   {% for stock in market_data %}
-  <tr style="background-color: {{ '#f9f9f9' if loop.index is odd else '#ffffff' }};">
-    <td style="padding: 5px 4px; font-size: 13px; border-bottom: 1px solid #eee; font-weight: bold;">{{ stock.symbol }}</td>
-    <td style="padding: 5px 4px; font-size: 13px; border-bottom: 1px solid #eee;">${{ "%.2f"|format(stock.price) }}</td>
-    <td style="padding: 5px 4px; font-size: 13px; border-bottom: 1px solid #eee; color: {{ '#27ae60' if stock.change_pct >= 0 else '#e74c3c' }}; font-weight: bold;">{{ "%+.2f"|format(stock.change_pct) }}%</td>
-    <td style="padding: 5px 4px; font-size: 13px; border-bottom: 1px solid #eee;">{{ "%.1f"|format(stock.pe_ratio) if stock.pe_ratio else "—" }}</td>
-    <td style="padding: 5px 4px; font-size: 13px; border-bottom: 1px solid #eee;">{{ "%.1f"|format(stock.forward_pe) if stock.forward_pe else "—" }}</td>
-    <td style="padding: 5px 4px; font-size: 13px; border-bottom: 1px solid #eee;">{{ stock.sector }}</td>
+  <tr>
+    <td class="ticker">{{ stock.symbol }}</td>
+    <td>${{ "%.2f"|format(stock.price) }}</td>
+    <td class="{{ 'up' if stock.change_pct >= 0 else 'down' }}">{{ "%+.2f"|format(stock.change_pct) }}%</td>
+    <td>{{ "%.1f"|format(stock.pe_ratio) if stock.pe_ratio else "—" }}</td>
+    <td>{{ "%.1f"|format(stock.forward_pe) if stock.forward_pe else "—" }}</td>
   </tr>
   {% endfor %}
   </table>
-</td></tr>
-
-<tr><td style="padding: 10px 0;"></td></tr>
+</div>
 
 {% if macro_data %}
-<tr><td style="background: #ffffff; padding: 20px; font-family: Segoe UI, Arial, sans-serif;">
-  <h2 style="color: #16213e; margin: 0 0 15px 0; font-size: 18px;">Macro Indicators</h2>
-  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse: collapse;">
+<div class="section">
+  <h2>Macro Indicators</h2>
+  <table class="data">
   <tr>
-    <td style="padding: 6px 8px; font-size: 12px; font-weight: bold; color: #ffffff; background-color: #16213e; border: 1px solid #16213e;">Indicator</td>
-    <td style="padding: 6px 8px; font-size: 12px; font-weight: bold; color: #ffffff; background-color: #16213e; border: 1px solid #16213e; width: 120px;">Value</td>
+    <th>Indicator</th>
+    <th>Latest Value</th>
   </tr>
   {% for name, value in macro_data.items() %}
-  <tr style="background-color: {{ '#f9f9f9' if loop.index is odd else '#ffffff' }};">
-    <td style="padding: 5px 8px; font-size: 13px; border-bottom: 1px solid #eee; font-weight: bold;">{{ name }}</td>
-    <td style="padding: 5px 8px; font-size: 13px; border-bottom: 1px solid #eee;">{{ value }}</td>
+  <tr>
+    <td style="font-weight: 600;">{{ name }}</td>
+    <td>{{ value }}</td>
   </tr>
   {% endfor %}
   </table>
-</td></tr>
-<tr><td style="padding: 10px 0;"></td></tr>
+</div>
 {% endif %}
 
-<tr><td style="background: #ffffff; padding: 20px; font-family: Segoe UI, Arial, sans-serif;">
-  <h2 style="color: #16213e; margin: 0 0 15px 0; font-size: 18px;">Financial News</h2>
+<div class="section">
+  <h2>Financial News</h2>
   {% for article in news[:15] %}
-  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 10px;">
-  <tr>
-    <td style="border-left: 3px solid #16213e; padding: 8px 12px; background: #fafafa;">
-      <a href="{{ article.link }}" style="color: #1a1a2e; text-decoration: none; font-size: 14px; font-weight: 500;">{{ article.title }}</a><br>
-      <span style="color: #888; font-size: 11px;">{{ article.source }} | {{ article.published }}</span>
-    </td>
-  </tr>
-  </table>
+  <div class="news-item">
+    <a href="{{ article.link }}">{{ article.title }}</a>
+    <div class="news-meta">{{ article.source }} &middot; {{ article.published }}</div>
+  </div>
   {% endfor %}
-</td></tr>
+</div>
 
-<tr><td style="padding: 30px 0 10px 0; text-align: center; font-family: Segoe UI, Arial, sans-serif;">
-  <p style="color: #888; font-size: 12px; margin: 0;">Generated automatically. Data from Yahoo Finance, FRED, and public RSS feeds.</p>
-</td></tr>
+<div class="footer">
+  Data from Yahoo Finance, FRED, and public RSS feeds. Generated automatically.
+</div>
 
-</table>
-</td></tr>
-</table>
+</div>
+</div>
 </body>
 </html>
 """)

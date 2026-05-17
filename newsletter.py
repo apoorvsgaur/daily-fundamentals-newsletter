@@ -1,6 +1,9 @@
 import json
 import os
+import smtplib
 import datetime
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from pathlib import Path
 
 import yfinance as yf
@@ -12,6 +15,8 @@ CONFIG_PATH = Path(__file__).parent / "config.json"
 
 BUTTONDOWN_API_KEY = os.environ.get("BUTTONDOWN_API_KEY", "")
 FRED_API_KEY = os.environ.get("FRED_API_KEY", "")
+GMAIL_APP_PASSWORD = os.environ.get("GMAIL_APP_PASSWORD", "")
+GMAIL_SENDER = os.environ.get("GMAIL_SENDER", "")
 
 
 def load_config():
@@ -205,23 +210,33 @@ def build_html(market_data, news, macro_data, date_str):
     )
 
 
-def send_via_buttondown(subject, html_body):
-    resp = requests.post(
-        "https://api.buttondown.com/v1/emails",
-        headers={
-            "Authorization": f"Token {BUTTONDOWN_API_KEY}",
-            "X-Buttondown-Live-Dangerously": "true",
-        },
-        json={
-            "subject": subject,
-            "body": html_body,
-            "status": "about_to_send",
-        },
-    )
-    if not resp.ok:
-        print(f"Buttondown error {resp.status_code}: {resp.text}")
-    resp.raise_for_status()
-    return resp.json()
+def get_subscribers():
+    subscribers = []
+    url = "https://api.buttondown.com/v1/subscribers"
+    headers = {"Authorization": f"Token {BUTTONDOWN_API_KEY}"}
+    while url:
+        resp = requests.get(url, headers=headers)
+        resp.raise_for_status()
+        data = resp.json()
+        for sub in data["results"]:
+            if sub.get("subscriber_type", "regular") == "regular":
+                subscribers.append(sub["email_address"])
+        url = data.get("next")
+    return subscribers
+
+
+def send_email(subject, html_body, recipients):
+    with smtplib.SMTP("smtp.gmail.com", 587) as server:
+        server.starttls()
+        server.login(GMAIL_SENDER, GMAIL_APP_PASSWORD)
+        for recipient in recipients:
+            msg = MIMEMultipart("alternative")
+            msg["Subject"] = subject
+            msg["From"] = GMAIL_SENDER
+            msg["To"] = recipient
+            msg.attach(MIMEText(html_body, "html"))
+            server.sendmail(GMAIL_SENDER, recipient, msg.as_string())
+            print(f"  Sent to {recipient}")
 
 
 def main():
@@ -240,10 +255,14 @@ def main():
     print(f"[{datetime.datetime.now()}] Building report...")
     html = build_html(market_data, news, macro_data, date_str)
 
+    print(f"[{datetime.datetime.now()}] Fetching subscriber list from Buttondown...")
+    subscribers = get_subscribers()
+    print(f"  Found {len(subscribers)} subscriber(s)")
+
     subject = f"Daily Fundamentals Report — {date_str}"
-    print(f"[{datetime.datetime.now()}] Sending via Buttondown...")
-    result = send_via_buttondown(subject, html)
-    print(f"[{datetime.datetime.now()}] Done! Email ID: {result.get('id', 'sent')}")
+    print(f"[{datetime.datetime.now()}] Sending via Gmail SMTP...")
+    send_email(subject, html, subscribers)
+    print(f"[{datetime.datetime.now()}] Done!")
 
 
 if __name__ == "__main__":

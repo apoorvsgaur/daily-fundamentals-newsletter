@@ -1,0 +1,10 @@
+{
+  "watchlist": [
+    "SPY", "QQQ", "DIA", "IWM",
+    "AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA",
+    "JPM", "V", "JNJ", "UNH", "XOM"
+  ],
+  "fred_series": [
+    "DFF", "T10Y2Y", "T10YIE", "UNRATE", "CPIAUCSL", "GDP", "UMCSENT"
+  ]
+}

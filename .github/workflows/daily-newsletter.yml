@@ -1,0 +1,27 @@
+name: Daily Fundamentals Newsletter
+
+on:
+  schedule:
+    # 10 PM UTC = 6 PM ET (adjusts for DST manually if needed)
+    - cron: '0 22 * * 1-5'
+  workflow_dispatch: # allows manual trigger from GitHub UI
+
+jobs:
+  send-newsletter:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run newsletter
+        env:
+          BUTTONDOWN_API_KEY: ${{ secrets.BUTTONDOWN_API_KEY }}
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+        run: python newsletter.py

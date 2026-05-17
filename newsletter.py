@@ -106,65 +106,59 @@ def build_html(market_data, news, macro_data, date_str):
     template = Template("""
 <!DOCTYPE html>
 <html>
-<head>
-<style>
-  body { font-family: 'Segoe UI', Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background: #f8f9fa; }
-  h1 { color: #1a1a2e; border-bottom: 3px solid #16213e; padding-bottom: 10px; }
-  h2 { color: #16213e; margin-top: 30px; }
-  .date { color: #666; font-size: 14px; }
-  table { border-collapse: collapse; width: 100%; margin: 15px 0; }
-  th, td { padding: 8px 12px; text-align: left; border-bottom: 1px solid #ddd; }
-  th { background: #16213e; color: white; }
-  tr:hover { background: #f1f1f1; }
-  .positive { color: #27ae60; font-weight: bold; }
-  .negative { color: #e74c3c; font-weight: bold; }
-  .news-item { margin: 12px 0; padding: 10px; background: white; border-radius: 5px; border-left: 3px solid #16213e; }
-  .news-source { color: #888; font-size: 12px; }
-  .news-title a { color: #1a1a2e; text-decoration: none; }
-  .news-title a:hover { text-decoration: underline; }
-  .macro-table td:first-child { font-weight: bold; }
-  .section { background: white; padding: 20px; border-radius: 8px; margin: 15px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-</style>
-</head>
-<body>
-<h1>Daily Fundamentals Report</h1>
-<p class="date">{{ date_str }} | After Market Close</p>
+<head><meta charset="utf-8"></head>
+<body style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background-color: #f8f9fa;">
+<h1 style="color: #1a1a2e; border-bottom: 3px solid #16213e; padding-bottom: 10px;">Daily Fundamentals Report</h1>
+<p style="color: #666; font-size: 14px;">{{ date_str }} | After Market Close</p>
 
-<div class="section">
-<h2>Market Overview</h2>
-<table>
-<tr><th>Symbol</th><th>Price</th><th>Change</th><th>P/E</th><th>Fwd P/E</th><th>Sector</th></tr>
+<div style="background: white; padding: 20px; border-radius: 8px; margin: 15px 0;">
+<h2 style="color: #16213e; margin-top: 0;">Market Overview</h2>
+<table style="border-collapse: collapse; width: 100%; margin: 15px 0;" cellpadding="0" cellspacing="0">
+<tr>
+  <th style="padding: 8px 12px; text-align: left; border-bottom: 2px solid #ddd; background-color: #16213e; color: white;">Symbol</th>
+  <th style="padding: 8px 12px; text-align: left; border-bottom: 2px solid #ddd; background-color: #16213e; color: white;">Price</th>
+  <th style="padding: 8px 12px; text-align: left; border-bottom: 2px solid #ddd; background-color: #16213e; color: white;">Change</th>
+  <th style="padding: 8px 12px; text-align: left; border-bottom: 2px solid #ddd; background-color: #16213e; color: white;">P/E</th>
+  <th style="padding: 8px 12px; text-align: left; border-bottom: 2px solid #ddd; background-color: #16213e; color: white;">Fwd P/E</th>
+  <th style="padding: 8px 12px; text-align: left; border-bottom: 2px solid #ddd; background-color: #16213e; color: white;">Sector</th>
+</tr>
 {% for stock in market_data %}
 <tr>
-  <td><strong>{{ stock.symbol }}</strong></td>
-  <td>${{ "%.2f"|format(stock.price) }}</td>
-  <td class="{{ 'positive' if stock.change_pct >= 0 else 'negative' }}">{{ "%+.2f"|format(stock.change_pct) }}%</td>
-  <td>{{ "%.1f"|format(stock.pe_ratio) if stock.pe_ratio else "—" }}</td>
-  <td>{{ "%.1f"|format(stock.forward_pe) if stock.forward_pe else "—" }}</td>
-  <td>{{ stock.sector }}</td>
+  <td style="padding: 8px 12px; text-align: left; border-bottom: 1px solid #ddd; white-space: nowrap;"><strong>{{ stock.symbol }}</strong></td>
+  <td style="padding: 8px 12px; text-align: left; border-bottom: 1px solid #ddd; white-space: nowrap;">${{ "%.2f"|format(stock.price) }}</td>
+  <td style="padding: 8px 12px; text-align: left; border-bottom: 1px solid #ddd; white-space: nowrap; color: {{ '#27ae60' if stock.change_pct >= 0 else '#e74c3c' }}; font-weight: bold;">{{ "%+.2f"|format(stock.change_pct) }}%</td>
+  <td style="padding: 8px 12px; text-align: left; border-bottom: 1px solid #ddd; white-space: nowrap;">{{ "%.1f"|format(stock.pe_ratio) if stock.pe_ratio else "—" }}</td>
+  <td style="padding: 8px 12px; text-align: left; border-bottom: 1px solid #ddd; white-space: nowrap;">{{ "%.1f"|format(stock.forward_pe) if stock.forward_pe else "—" }}</td>
+  <td style="padding: 8px 12px; text-align: left; border-bottom: 1px solid #ddd;">{{ stock.sector }}</td>
 </tr>
 {% endfor %}
 </table>
 </div>
 
 {% if macro_data %}
-<div class="section">
-<h2>Macro Indicators</h2>
-<table class="macro-table">
-<tr><th>Indicator</th><th>Latest Value</th></tr>
+<div style="background: white; padding: 20px; border-radius: 8px; margin: 15px 0;">
+<h2 style="color: #16213e; margin-top: 0;">Macro Indicators</h2>
+<table style="border-collapse: collapse; width: 100%; margin: 15px 0;" cellpadding="0" cellspacing="0">
+<tr>
+  <th style="padding: 8px 12px; text-align: left; border-bottom: 2px solid #ddd; background-color: #16213e; color: white;">Indicator</th>
+  <th style="padding: 8px 12px; text-align: left; border-bottom: 2px solid #ddd; background-color: #16213e; color: white;">Latest Value</th>
+</tr>
 {% for name, value in macro_data.items() %}
-<tr><td>{{ name }}</td><td>{{ value }}</td></tr>
+<tr>
+  <td style="padding: 8px 12px; text-align: left; border-bottom: 1px solid #ddd; font-weight: bold;">{{ name }}</td>
+  <td style="padding: 8px 12px; text-align: left; border-bottom: 1px solid #ddd;">{{ value }}</td>
+</tr>
 {% endfor %}
 </table>
 </div>
 {% endif %}
 
-<div class="section">
-<h2>Financial News</h2>
+<div style="background: white; padding: 20px; border-radius: 8px; margin: 15px 0;">
+<h2 style="color: #16213e; margin-top: 0;">Financial News</h2>
 {% for article in news[:15] %}
-<div class="news-item">
-  <div class="news-title"><a href="{{ article.link }}">{{ article.title }}</a></div>
-  <div class="news-source">{{ article.source }} | {{ article.published }}</div>
+<div style="margin: 12px 0; padding: 10px; background: #fafafa; border-radius: 5px; border-left: 3px solid #16213e;">
+  <div><a href="{{ article.link }}" style="color: #1a1a2e; text-decoration: none; font-weight: 500;">{{ article.title }}</a></div>
+  <div style="color: #888; font-size: 12px; margin-top: 4px;">{{ article.source }} | {{ article.published }}</div>
 </div>
 {% endfor %}
 </div>

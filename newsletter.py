@@ -105,67 +105,95 @@ def fetch_fred_data(series_ids):
 def build_html(market_data, news, macro_data, date_str):
     template = Template("""
 <!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"></head>
-<body style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background-color: #f8f9fa;">
-<h1 style="color: #1a1a2e; border-bottom: 3px solid #16213e; padding-bottom: 10px;">Daily Fundamentals Report</h1>
-<p style="color: #666; font-size: 14px;">{{ date_str }} | After Market Close</p>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; background-color: #f8f9fa;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+<tr><td align="center" style="padding: 20px 10px;">
+<table role="presentation" width="700" cellpadding="0" cellspacing="0" border="0" style="max-width: 700px; width: 100%;">
 
-<div style="background: white; padding: 20px; border-radius: 8px; margin: 15px 0;">
-<h2 style="color: #16213e; margin-top: 0;">Market Overview</h2>
-<table style="border-collapse: collapse; width: 100%; margin: 15px 0;" cellpadding="0" cellspacing="0">
-<tr>
-  <th style="padding: 8px 12px; text-align: left; border-bottom: 2px solid #ddd; background-color: #16213e; color: white;">Symbol</th>
-  <th style="padding: 8px 12px; text-align: left; border-bottom: 2px solid #ddd; background-color: #16213e; color: white;">Price</th>
-  <th style="padding: 8px 12px; text-align: left; border-bottom: 2px solid #ddd; background-color: #16213e; color: white;">Change</th>
-  <th style="padding: 8px 12px; text-align: left; border-bottom: 2px solid #ddd; background-color: #16213e; color: white;">P/E</th>
-  <th style="padding: 8px 12px; text-align: left; border-bottom: 2px solid #ddd; background-color: #16213e; color: white;">Fwd P/E</th>
-  <th style="padding: 8px 12px; text-align: left; border-bottom: 2px solid #ddd; background-color: #16213e; color: white;">Sector</th>
-</tr>
-{% for stock in market_data %}
-<tr>
-  <td style="padding: 8px 12px; text-align: left; border-bottom: 1px solid #ddd; white-space: nowrap;"><strong>{{ stock.symbol }}</strong></td>
-  <td style="padding: 8px 12px; text-align: left; border-bottom: 1px solid #ddd; white-space: nowrap;">${{ "%.2f"|format(stock.price) }}</td>
-  <td style="padding: 8px 12px; text-align: left; border-bottom: 1px solid #ddd; white-space: nowrap; color: {{ '#27ae60' if stock.change_pct >= 0 else '#e74c3c' }}; font-weight: bold;">{{ "%+.2f"|format(stock.change_pct) }}%</td>
-  <td style="padding: 8px 12px; text-align: left; border-bottom: 1px solid #ddd; white-space: nowrap;">{{ "%.1f"|format(stock.pe_ratio) if stock.pe_ratio else "—" }}</td>
-  <td style="padding: 8px 12px; text-align: left; border-bottom: 1px solid #ddd; white-space: nowrap;">{{ "%.1f"|format(stock.forward_pe) if stock.forward_pe else "—" }}</td>
-  <td style="padding: 8px 12px; text-align: left; border-bottom: 1px solid #ddd;">{{ stock.sector }}</td>
-</tr>
-{% endfor %}
-</table>
-</div>
+<tr><td style="font-family: Segoe UI, Arial, sans-serif; padding: 0 0 20px 0;">
+  <h1 style="color: #1a1a2e; border-bottom: 3px solid #16213e; padding-bottom: 10px; margin: 0 0 5px 0; font-size: 24px;">Daily Fundamentals Report</h1>
+  <p style="color: #666; font-size: 14px; margin: 0;">{{ date_str }} | After Market Close</p>
+</td></tr>
+
+<tr><td style="background: #ffffff; padding: 20px; font-family: Segoe UI, Arial, sans-serif;">
+  <h2 style="color: #16213e; margin: 0 0 15px 0; font-size: 18px;">Market Overview</h2>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="table-layout: fixed; border-collapse: collapse;">
+  <colgroup>
+    <col width="60">
+    <col width="80">
+    <col width="70">
+    <col width="50">
+    <col width="55">
+    <col width="*">
+  </colgroup>
+  <tr>
+    <td style="padding: 6px 4px; font-size: 12px; font-weight: bold; color: #ffffff; background-color: #16213e; border: 1px solid #16213e;">Ticker</td>
+    <td style="padding: 6px 4px; font-size: 12px; font-weight: bold; color: #ffffff; background-color: #16213e; border: 1px solid #16213e;">Price</td>
+    <td style="padding: 6px 4px; font-size: 12px; font-weight: bold; color: #ffffff; background-color: #16213e; border: 1px solid #16213e;">Chg %</td>
+    <td style="padding: 6px 4px; font-size: 12px; font-weight: bold; color: #ffffff; background-color: #16213e; border: 1px solid #16213e;">P/E</td>
+    <td style="padding: 6px 4px; font-size: 12px; font-weight: bold; color: #ffffff; background-color: #16213e; border: 1px solid #16213e;">Fwd</td>
+    <td style="padding: 6px 4px; font-size: 12px; font-weight: bold; color: #ffffff; background-color: #16213e; border: 1px solid #16213e;">Sector</td>
+  </tr>
+  {% for stock in market_data %}
+  <tr style="background-color: {{ '#f9f9f9' if loop.index is odd else '#ffffff' }};">
+    <td style="padding: 5px 4px; font-size: 13px; border-bottom: 1px solid #eee; font-weight: bold;">{{ stock.symbol }}</td>
+    <td style="padding: 5px 4px; font-size: 13px; border-bottom: 1px solid #eee;">${{ "%.2f"|format(stock.price) }}</td>
+    <td style="padding: 5px 4px; font-size: 13px; border-bottom: 1px solid #eee; color: {{ '#27ae60' if stock.change_pct >= 0 else '#e74c3c' }}; font-weight: bold;">{{ "%+.2f"|format(stock.change_pct) }}%</td>
+    <td style="padding: 5px 4px; font-size: 13px; border-bottom: 1px solid #eee;">{{ "%.1f"|format(stock.pe_ratio) if stock.pe_ratio else "—" }}</td>
+    <td style="padding: 5px 4px; font-size: 13px; border-bottom: 1px solid #eee;">{{ "%.1f"|format(stock.forward_pe) if stock.forward_pe else "—" }}</td>
+    <td style="padding: 5px 4px; font-size: 13px; border-bottom: 1px solid #eee;">{{ stock.sector }}</td>
+  </tr>
+  {% endfor %}
+  </table>
+</td></tr>
+
+<tr><td style="padding: 10px 0;"></td></tr>
 
 {% if macro_data %}
-<div style="background: white; padding: 20px; border-radius: 8px; margin: 15px 0;">
-<h2 style="color: #16213e; margin-top: 0;">Macro Indicators</h2>
-<table style="border-collapse: collapse; width: 100%; margin: 15px 0;" cellpadding="0" cellspacing="0">
-<tr>
-  <th style="padding: 8px 12px; text-align: left; border-bottom: 2px solid #ddd; background-color: #16213e; color: white;">Indicator</th>
-  <th style="padding: 8px 12px; text-align: left; border-bottom: 2px solid #ddd; background-color: #16213e; color: white;">Latest Value</th>
-</tr>
-{% for name, value in macro_data.items() %}
-<tr>
-  <td style="padding: 8px 12px; text-align: left; border-bottom: 1px solid #ddd; font-weight: bold;">{{ name }}</td>
-  <td style="padding: 8px 12px; text-align: left; border-bottom: 1px solid #ddd;">{{ value }}</td>
-</tr>
-{% endfor %}
-</table>
-</div>
+<tr><td style="background: #ffffff; padding: 20px; font-family: Segoe UI, Arial, sans-serif;">
+  <h2 style="color: #16213e; margin: 0 0 15px 0; font-size: 18px;">Macro Indicators</h2>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse: collapse;">
+  <tr>
+    <td style="padding: 6px 8px; font-size: 12px; font-weight: bold; color: #ffffff; background-color: #16213e; border: 1px solid #16213e;">Indicator</td>
+    <td style="padding: 6px 8px; font-size: 12px; font-weight: bold; color: #ffffff; background-color: #16213e; border: 1px solid #16213e; width: 120px;">Value</td>
+  </tr>
+  {% for name, value in macro_data.items() %}
+  <tr style="background-color: {{ '#f9f9f9' if loop.index is odd else '#ffffff' }};">
+    <td style="padding: 5px 8px; font-size: 13px; border-bottom: 1px solid #eee; font-weight: bold;">{{ name }}</td>
+    <td style="padding: 5px 8px; font-size: 13px; border-bottom: 1px solid #eee;">{{ value }}</td>
+  </tr>
+  {% endfor %}
+  </table>
+</td></tr>
+<tr><td style="padding: 10px 0;"></td></tr>
 {% endif %}
 
-<div style="background: white; padding: 20px; border-radius: 8px; margin: 15px 0;">
-<h2 style="color: #16213e; margin-top: 0;">Financial News</h2>
-{% for article in news[:15] %}
-<div style="margin: 12px 0; padding: 10px; background: #fafafa; border-radius: 5px; border-left: 3px solid #16213e;">
-  <div><a href="{{ article.link }}" style="color: #1a1a2e; text-decoration: none; font-weight: 500;">{{ article.title }}</a></div>
-  <div style="color: #888; font-size: 12px; margin-top: 4px;">{{ article.source }} | {{ article.published }}</div>
-</div>
-{% endfor %}
-</div>
+<tr><td style="background: #ffffff; padding: 20px; font-family: Segoe UI, Arial, sans-serif;">
+  <h2 style="color: #16213e; margin: 0 0 15px 0; font-size: 18px;">Financial News</h2>
+  {% for article in news[:15] %}
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 10px;">
+  <tr>
+    <td style="border-left: 3px solid #16213e; padding: 8px 12px; background: #fafafa;">
+      <a href="{{ article.link }}" style="color: #1a1a2e; text-decoration: none; font-size: 14px; font-weight: 500;">{{ article.title }}</a><br>
+      <span style="color: #888; font-size: 11px;">{{ article.source }} | {{ article.published }}</span>
+    </td>
+  </tr>
+  </table>
+  {% endfor %}
+</td></tr>
 
-<p style="color: #888; font-size: 12px; text-align: center; margin-top: 30px;">
-  Generated automatically. Data from Yahoo Finance, FRED, and public RSS feeds.
-</p>
+<tr><td style="padding: 30px 0 10px 0; text-align: center; font-family: Segoe UI, Arial, sans-serif;">
+  <p style="color: #888; font-size: 12px; margin: 0;">Generated automatically. Data from Yahoo Finance, FRED, and public RSS feeds.</p>
+</td></tr>
+
+</table>
+</td></tr>
+</table>
 </body>
 </html>
 """)

@@ -12,11 +12,14 @@ import requests
 from jinja2 import Template
 
 CONFIG_PATH = Path(__file__).parent / "config.json"
+REPORT_DIR = Path(__file__).parent / "report"
 
 BUTTONDOWN_API_KEY = os.environ.get("BUTTONDOWN_API_KEY", "")
 FRED_API_KEY = os.environ.get("FRED_API_KEY", "")
 GMAIL_APP_PASSWORD = os.environ.get("GMAIL_APP_PASSWORD", "")
 GMAIL_SENDER = os.environ.get("GMAIL_SENDER", "")
+
+PAGES_URL = "https://apoorvsgaur.github.io/daily-fundamentals-newsletter"
 
 
 def load_config():
@@ -107,7 +110,165 @@ def fetch_fred_data(series_ids):
         return {}
 
 
-def build_html(market_data, news, macro_data, date_str):
+def build_web_report(market_data, news, macro_data, date_str):
+    template = Template("""
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daily Fundamentals Report — {{ date_str }}</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, 'Segoe UI', Arial, sans-serif; background: #f4f4f7; color: #1a1a2e; line-height: 1.5; }
+  .container { max-width: 800px; margin: 0 auto; padding: 20px; }
+  .header { background: #1a1a2e; color: #fff; padding: 32px; border-radius: 12px 12px 0 0; }
+  .header h1 { font-size: 26px; font-family: Georgia, serif; margin-bottom: 4px; }
+  .header p { color: #a0a0b0; font-size: 14px; }
+  .content { background: #fff; border-radius: 0 0 12px 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+
+  .section { border-bottom: 1px solid #eee; }
+  .section:last-child { border-bottom: none; }
+  .section-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 32px; cursor: pointer; user-select: none;
+    transition: background 0.15s;
+  }
+  .section-header:hover { background: #f8f9fa; }
+  .section-header h2 { font-size: 15px; text-transform: uppercase; letter-spacing: 0.5px; color: #1a1a2e; }
+  .section-header .arrow { font-size: 18px; color: #999; transition: transform 0.25s; }
+  .section-header.open .arrow { transform: rotate(180deg); }
+  .section-body { padding: 0 32px 24px 32px; display: none; }
+  .section-body.open { display: block; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { text-align: left; padding: 10px 12px; background: #f8f9fa; color: #555; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; border-bottom: 2px solid #e0e0e0; }
+  td { padding: 9px 12px; border-bottom: 1px solid #f0f0f0; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover { background: #fafbfc; }
+  .ticker { font-weight: 700; }
+  .up { color: #16a34a; font-weight: 600; }
+  .down { color: #dc2626; font-weight: 600; }
+  .macro-label { font-weight: 600; }
+
+  .news-item { padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
+  .news-item:last-child { border-bottom: none; }
+  .news-item a { color: #1a1a2e; text-decoration: none; font-size: 15px; line-height: 1.4; }
+  .news-item a:hover { text-decoration: underline; color: #2563eb; }
+  .news-meta { color: #999; font-size: 12px; margin-top: 4px; }
+
+  .footer { text-align: center; padding: 24px; color: #999; font-size: 12px; }
+
+  @media (max-width: 600px) {
+    .container { padding: 10px; }
+    .header, .section-header, .section-body { padding-left: 16px; padding-right: 16px; }
+    th, td { padding: 7px 6px; font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header">
+  <h1>Daily Fundamentals Report</h1>
+  <p>{{ date_str }}</p>
+</div>
+
+<div class="content">
+
+  <div class="section">
+    <div class="section-header open" onclick="toggle(this)">
+      <h2>Market Overview</h2>
+      <span class="arrow">&#9660;</span>
+    </div>
+    <div class="section-body open">
+      <table>
+      <tr>
+        <th>Ticker</th>
+        <th>Price</th>
+        <th>Change</th>
+        <th>P/E</th>
+        <th>Fwd P/E</th>
+        <th>Sector</th>
+      </tr>
+      {% for stock in market_data %}
+      <tr>
+        <td class="ticker">{{ stock.symbol }}</td>
+        <td>${{ "%.2f"|format(stock.price) }}</td>
+        <td class="{{ 'up' if stock.change_pct >= 0 else 'down' }}">{{ "%+.2f"|format(stock.change_pct) }}%</td>
+        <td>{{ "%.1f"|format(stock.pe_ratio) if stock.pe_ratio else "—" }}</td>
+        <td>{{ "%.1f"|format(stock.forward_pe) if stock.forward_pe else "—" }}</td>
+        <td>{{ stock.sector }}</td>
+      </tr>
+      {% endfor %}
+      </table>
+    </div>
+  </div>
+
+  {% if macro_data %}
+  <div class="section">
+    <div class="section-header" onclick="toggle(this)">
+      <h2>Macro Indicators</h2>
+      <span class="arrow">&#9660;</span>
+    </div>
+    <div class="section-body">
+      <table>
+      <tr><th>Indicator</th><th>Latest Value</th></tr>
+      {% for name, value in macro_data.items() %}
+      <tr>
+        <td class="macro-label">{{ name }}</td>
+        <td>{{ value }}</td>
+      </tr>
+      {% endfor %}
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="section">
+    <div class="section-header" onclick="toggle(this)">
+      <h2>Financial News</h2>
+      <span class="arrow">&#9660;</span>
+    </div>
+    <div class="section-body">
+      {% for article in news[:15] %}
+      <div class="news-item">
+        <a href="{{ article.link }}" target="_blank">{{ article.title }}</a>
+        <div class="news-meta">{{ article.source }} &middot; {{ article.published }}</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">
+  Data from Yahoo Finance, FRED, and public RSS feeds. Generated automatically.
+</div>
+
+</div>
+<script>
+function toggle(header) {
+  header.classList.toggle('open');
+  var body = header.nextElementSibling;
+  body.classList.toggle('open');
+}
+</script>
+</body>
+</html>
+""")
+    return template.render(
+        market_data=market_data,
+        news=news,
+        macro_data=macro_data,
+        date_str=date_str,
+    )
+
+
+def build_summary_email(market_data, news, macro_data, date_str, report_url):
+    top_movers = sorted(market_data, key=lambda x: abs(x["change_pct"]), reverse=True)[:5]
+    indices = [s for s in market_data if s["symbol"] in ("SPY", "QQQ", "DIA", "IWM")]
+
     template = Template("""
 <!DOCTYPE html>
 <html>
@@ -121,22 +282,23 @@ def build_html(market_data, news, macro_data, date_str):
   .header { background: #1a1a2e; padding: 24px 30px; }
   .header h1 { color: #ffffff; margin: 0; font-size: 22px; font-family: Georgia, serif; }
   .header p { color: #a0a0b0; margin: 6px 0 0 0; font-size: 13px; font-family: Arial, sans-serif; }
-  .section { padding: 24px 30px; border-bottom: 1px solid #eee; }
+  .section { padding: 20px 30px; border-bottom: 1px solid #eee; font-family: Arial, sans-serif; }
   .section:last-child { border-bottom: none; }
-  .section h2 { color: #1a1a2e; font-size: 16px; margin: 0 0 14px 0; font-family: Arial, sans-serif; text-transform: uppercase; letter-spacing: 0.5px; }
-  table.data { width: 100%; border-collapse: collapse; font-family: Arial, sans-serif; font-size: 13px; }
+  .section h2 { color: #1a1a2e; font-size: 14px; margin: 0 0 12px 0; text-transform: uppercase; letter-spacing: 0.5px; }
+  table.data { width: 100%; border-collapse: collapse; font-size: 13px; }
   table.data th { text-align: left; padding: 8px 10px; background: #f8f9fa; color: #555; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; border-bottom: 2px solid #e0e0e0; }
   table.data td { padding: 7px 10px; border-bottom: 1px solid #f0f0f0; }
-  table.data tr:last-child td { border-bottom: none; }
   .ticker { font-weight: 700; color: #1a1a2e; }
   .up { color: #16a34a; font-weight: 600; }
   .down { color: #dc2626; font-weight: 600; }
-  .news-item { padding: 10px 0; border-bottom: 1px solid #f0f0f0; }
-  .news-item:last-child { border-bottom: none; }
-  .news-item a { color: #1a1a2e; text-decoration: none; font-size: 14px; font-family: Arial, sans-serif; line-height: 1.4; }
-  .news-item a:hover { text-decoration: underline; }
-  .news-meta { color: #999; font-size: 11px; margin-top: 3px; font-family: Arial, sans-serif; }
-  .footer { padding: 20px 30px; text-align: center; color: #999; font-size: 11px; font-family: Arial, sans-serif; }
+  .cta { text-align: center; padding: 24px 30px; }
+  .cta a {
+    display: inline-block; padding: 14px 32px;
+    background: #1a1a2e; color: #ffffff; text-decoration: none;
+    border-radius: 6px; font-size: 15px; font-weight: 600;
+    font-family: Arial, sans-serif;
+  }
+  .footer { padding: 16px 30px; text-align: center; color: #999; font-size: 11px; font-family: Arial, sans-serif; }
 </style>
 </head>
 <body>
@@ -149,38 +311,38 @@ def build_html(market_data, news, macro_data, date_str):
 </div>
 
 <div class="section">
-  <h2>Market Overview</h2>
+  <h2>Index Snapshot</h2>
   <table class="data">
+  <tr><th>Index</th><th>Price</th><th>Change</th></tr>
+  {% for idx in indices %}
   <tr>
-    <th>Ticker</th>
-    <th>Price</th>
-    <th>Change</th>
-    <th>P/E</th>
-    <th>Fwd P/E</th>
-    <th>Sector</th>
-  </tr>
-  {% for stock in market_data %}
-  <tr>
-    <td class="ticker">{{ stock.symbol }}</td>
-    <td>${{ "%.2f"|format(stock.price) }}</td>
-    <td class="{{ 'up' if stock.change_pct >= 0 else 'down' }}">{{ "%+.2f"|format(stock.change_pct) }}%</td>
-    <td>{{ "%.1f"|format(stock.pe_ratio) if stock.pe_ratio else "—" }}</td>
-    <td>{{ "%.1f"|format(stock.forward_pe) if stock.forward_pe else "—" }}</td>
-    <td>{{ stock.sector }}</td>
+    <td class="ticker">{{ idx.symbol }}</td>
+    <td>${{ "%.2f"|format(idx.price) }}</td>
+    <td class="{{ 'up' if idx.change_pct >= 0 else 'down' }}">{{ "%+.2f"|format(idx.change_pct) }}%</td>
   </tr>
   {% endfor %}
   </table>
 </div>
 
-{% if macro_data %}
 <div class="section">
-  <h2>Macro Indicators</h2>
+  <h2>Top Movers</h2>
   <table class="data">
+  <tr><th>Ticker</th><th>Price</th><th>Change</th></tr>
+  {% for stock in top_movers %}
   <tr>
-    <th>Indicator</th>
-    <th>Latest Value</th>
+    <td class="ticker">{{ stock.symbol }}</td>
+    <td>${{ "%.2f"|format(stock.price) }}</td>
+    <td class="{{ 'up' if stock.change_pct >= 0 else 'down' }}">{{ "%+.2f"|format(stock.change_pct) }}%</td>
   </tr>
-  {% for name, value in macro_data.items() %}
+  {% endfor %}
+  </table>
+</div>
+
+{% if macro_highlights %}
+<div class="section">
+  <h2>Key Macro Numbers</h2>
+  <table class="data">
+  {% for name, value in macro_highlights %}
   <tr>
     <td style="font-weight: 600;">{{ name }}</td>
     <td>{{ value }}</td>
@@ -190,14 +352,8 @@ def build_html(market_data, news, macro_data, date_str):
 </div>
 {% endif %}
 
-<div class="section">
-  <h2>Financial News</h2>
-  {% for article in news[:15] %}
-  <div class="news-item">
-    <a href="{{ article.link }}">{{ article.title }}</a>
-    <div class="news-meta">{{ article.source }} &middot; {{ article.published }}</div>
-  </div>
-  {% endfor %}
+<div class="cta">
+  <a href="{{ report_url }}">View Full Interactive Report &rarr;</a>
 </div>
 
 <div class="footer">
@@ -209,11 +365,13 @@ def build_html(market_data, news, macro_data, date_str):
 </body>
 </html>
 """)
+    macro_highlights = list(macro_data.items())[:3] if macro_data else []
     return template.render(
-        market_data=market_data,
-        news=news,
-        macro_data=macro_data,
+        indices=indices,
+        top_movers=top_movers,
+        macro_highlights=macro_highlights,
         date_str=date_str,
+        report_url=report_url,
     )
 
 
@@ -249,6 +407,7 @@ def send_email(subject, html_body, recipients):
 def main():
     config = load_config()
     date_str = datetime.date.today().strftime("%A, %B %d, %Y")
+    date_slug = datetime.date.today().strftime("%Y-%m-%d")
 
     print(f"[{datetime.datetime.now()}] Fetching market data...")
     market_data = fetch_market_data(config["watchlist"])
@@ -259,8 +418,16 @@ def main():
     print(f"[{datetime.datetime.now()}] Fetching macro data...")
     macro_data = fetch_fred_data(config.get("fred_series", []))
 
-    print(f"[{datetime.datetime.now()}] Building report...")
-    html = build_html(market_data, news, macro_data, date_str)
+    print(f"[{datetime.datetime.now()}] Building web report...")
+    web_html = build_web_report(market_data, news, macro_data, date_str)
+    REPORT_DIR.mkdir(exist_ok=True)
+    report_path = REPORT_DIR / "index.html"
+    report_path.write_text(web_html, encoding="utf-8")
+    print(f"  Written to {report_path}")
+
+    report_url = PAGES_URL
+    print(f"[{datetime.datetime.now()}] Building summary email...")
+    email_html = build_summary_email(market_data, news, macro_data, date_str, report_url)
 
     print(f"[{datetime.datetime.now()}] Fetching subscriber list from Buttondown...")
     subscribers = get_subscribers()
@@ -270,7 +437,7 @@ def main():
 
     subject = f"Daily Fundamentals Report — {date_str}"
     print(f"[{datetime.datetime.now()}] Sending via Gmail SMTP...")
-    send_email(subject, html, subscribers)
+    send_email(subject, email_html, subscribers)
     print(f"[{datetime.datetime.now()}] Done!")
 
 

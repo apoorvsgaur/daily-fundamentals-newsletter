@@ -2,9 +2,14 @@ name: Daily Fundamentals Newsletter
 
 on:
   schedule:
-    # 10 PM UTC = 6 PM ET (adjusts for DST manually if needed)
+    # 10 PM UTC = 6 PM ET
     - cron: '0 22 * * 1-5'
-  workflow_dispatch: # allows manual trigger from GitHub UI
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
 
 jobs:
   send-newsletter:
@@ -27,3 +32,19 @@ jobs:
           GMAIL_SENDER: ${{ secrets.GMAIL_SENDER }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
         run: python newsletter.py
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: report
+
+  deploy-report:
+    needs: send-newsletter
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

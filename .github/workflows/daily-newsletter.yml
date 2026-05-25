@@ -5,6 +5,11 @@ on:
     # 10 PM UTC = 6 PM ET
     - cron: '0 22 * * 1-5'
   workflow_dispatch:
+    inputs:
+      test_mode:
+        description: 'Send only to test recipient'
+        type: boolean
+        default: true
 
 permissions:
   contents: read
@@ -31,6 +36,7 @@ jobs:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
           GMAIL_SENDER: ${{ secrets.GMAIL_SENDER }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          TEST_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.test_mode && 'true' || 'false' }}
         run: python newsletter.py
 
       - name: Upload Pages artifact

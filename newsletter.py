@@ -18,6 +18,8 @@ BUTTONDOWN_API_KEY = os.environ.get("BUTTONDOWN_API_KEY", "")
 FRED_API_KEY = os.environ.get("FRED_API_KEY", "")
 GMAIL_APP_PASSWORD = os.environ.get("GMAIL_APP_PASSWORD", "")
 GMAIL_SENDER = os.environ.get("GMAIL_SENDER", "")
+TEST_MODE = os.environ.get("TEST_MODE", "false").lower() == "true"
+TEST_RECIPIENT = "apoorvsgaur@gmail.com"
 
 PAGES_URL = "https://apoorvsgaur.github.io/daily-fundamentals-newsletter"
 
@@ -429,13 +431,19 @@ def main():
     print(f"[{datetime.datetime.now()}] Building summary email...")
     email_html = build_summary_email(market_data, news, macro_data, date_str, report_url)
 
-    print(f"[{datetime.datetime.now()}] Fetching subscriber list from Buttondown...")
-    subscribers = get_subscribers()
-    extra = config.get("extra_subscribers", [])
-    subscribers = list(set(subscribers + extra))
-    print(f"  Found {len(subscribers)} subscriber(s)")
+    if TEST_MODE:
+        subscribers = [TEST_RECIPIENT]
+        print(f"[{datetime.datetime.now()}] TEST MODE — sending only to {TEST_RECIPIENT}")
+    else:
+        print(f"[{datetime.datetime.now()}] Fetching subscriber list from Buttondown...")
+        subscribers = get_subscribers()
+        extra = config.get("extra_subscribers", [])
+        subscribers = list(set(subscribers + extra))
+        print(f"  Found {len(subscribers)} subscriber(s)")
 
     subject = f"Daily Fundamentals Report — {date_str}"
+    if TEST_MODE:
+        subject = f"[TEST] {subject}"
     print(f"[{datetime.datetime.now()}] Sending via Gmail SMTP...")
     send_email(subject, email_html, subscribers)
     print(f"[{datetime.datetime.now()}] Done!")

@@ -393,15 +393,26 @@ def get_subscribers():
 
 
 def send_email(subject, html_body, recipients):
+    from urllib.parse import quote
     with smtplib.SMTP("smtp.gmail.com", 587) as server:
         server.starttls()
         server.login(GMAIL_SENDER, GMAIL_APP_PASSWORD)
         for recipient in recipients:
+            unsub_subject = quote("Unsubscribe from Daily Fundamentals Report")
+            unsub_body = quote(f"Please remove {recipient} from the newsletter.")
+            unsub_mailto = f"mailto:{GMAIL_SENDER}?subject={unsub_subject}&body={unsub_body}"
+
             msg = MIMEMultipart("alternative")
             msg["Subject"] = subject
             msg["From"] = GMAIL_SENDER
             msg["To"] = recipient
-            msg.attach(MIMEText(html_body, "html"))
+            msg["List-Unsubscribe"] = f"<{unsub_mailto}>"
+            msg["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click"
+
+            footer = f'<div style="text-align:center;padding:16px 30px;font-family:Arial,sans-serif;font-size:11px;color:#999;border-top:1px solid #eee;"><a href="{unsub_mailto}" style="color:#999;text-decoration:underline;">Unsubscribe</a> from this newsletter</div>'
+            body_with_footer = html_body.replace("</div>\n</div>\n</body>", f"</div>\n{footer}\n</div>\n</body>")
+
+            msg.attach(MIMEText(body_with_footer, "html"))
             server.sendmail(GMAIL_SENDER, recipient, msg.as_string())
             print(f"  Sent to {recipient}")
 
